@@ -101,11 +101,6 @@ load 'test_helper/bats-assert/load'
   assert_success
 }
 
-@test "checking process: clamav (clamav disabled by ENABLED_CLAMAV=0)" {
-  run docker exec mail_disabled_clamav_spamassassin /bin/bash -c "ps aux --forest | grep -v grep | grep '/usr/sbin/clamd'"
-  assert_failure
-}
-
 @test "checking process: saslauthd (saslauthd server enabled)" {
   run docker exec mail_with_ldap /bin/bash -c "ps aux --forest | grep -v grep | grep '/usr/sbin/saslauthd'"
   assert_success
@@ -439,68 +434,12 @@ load 'test_helper/bats-assert/load'
 }
 
 #
-# spamassassin
-#
-
-@test "checking spamassassin: should be listed in amavis when enabled" {
-  run docker exec mail /bin/sh -c "grep -i 'ANTI-SPAM-SA code' /var/log/mail/mail.log | grep 'NOT loaded'"
-  assert_failure
-}
-
-@test "checking spamassassin: should not be listed in amavis when disabled" {
-  run docker exec mail_disabled_clamav_spamassassin /bin/sh -c "grep -i 'ANTI-SPAM-SA code' /var/log/mail/mail.log | grep 'NOT loaded'"
-  assert_success
-}
-
-@test "checking spamassassin: docker env variables are set correctly (default)" {
-  run docker exec mail_pop3 /bin/sh -c "grep '\$sa_tag_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= 2.0'"
-  assert_success
-  run docker exec mail_pop3 /bin/sh -c "grep '\$sa_tag2_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= 6.31'"
-  assert_success
-  run docker exec mail_pop3 /bin/sh -c "grep '\$sa_kill_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= 6.31'"
-  assert_success
-  run docker exec mail_pop3 /bin/sh -c "grep '\$sa_spam_subject_tag' /etc/amavis/conf.d/20-debian_defaults | grep '= .\*\*\*SPAM\*\*\* .'"
-  assert_success
-}
-
-@test "checking spamassassin: docker env variables are set correctly (custom)" {
-  run docker exec mail /bin/sh -c "grep '\$sa_tag_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= -5.0'"
-  assert_success
-  run docker exec mail /bin/sh -c "grep '\$sa_tag2_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= 2.0'"
-  assert_success
-  run docker exec mail /bin/sh -c "grep '\$sa_kill_level_deflt' /etc/amavis/conf.d/20-debian_defaults | grep '= 3.0'"
-  assert_success
-  run docker exec mail /bin/sh -c "grep '\$sa_spam_subject_tag' /etc/amavis/conf.d/20-debian_defaults | grep '= .SPAM: .'"
-  assert_success
-  run docker exec mail_undef_spam_subject /bin/sh -c "grep '\$sa_spam_subject_tag' /etc/amavis/conf.d/20-debian_defaults | grep '= undef'"
-  assert_success
-}
-
-@test "checking spamassassin: all registered domains should see spam headers" {
-  run docker exec mail /bin/sh -c "grep -ir 'X-Spam-' /var/mail/localhost.localdomain/user1/new"
-  assert_success
-  run docker exec mail /bin/sh -c "grep -ir 'X-Spam-' /var/mail/otherdomain.tld/user2/new"
-  assert_success
-}
-
-
-#
 # clamav
 #
 
 @test "checking clamav: should be listed in amavis when enabled" {
   run docker exec mail grep -i 'Found secondary av scanner ClamAV-clamscan' /var/log/mail/mail.log
   assert_success
-}
-
-@test "checking clamav: should not be listed in amavis when disabled" {
-  run docker exec mail_disabled_clamav_spamassassin grep -i 'Found secondary av scanner ClamAV-clamscan' /var/log/mail/mail.log
-  assert_failure
-}
-
-@test "checking clamav: should not be called when disabled" {
-  run docker exec mail_disabled_clamav_spamassassin grep -i 'connect to /var/run/clamav/clamd.ctl failed' /var/log/mail/mail.log
-  assert_failure
 }
 
 #
@@ -1721,11 +1660,6 @@ load 'test_helper/bats-assert/load'
 @test "checking restart of process: fetchmail" {
   run docker exec mail_fetchmail /bin/bash -c "pkill fetchmail && sleep 10 && ps aux --forest | grep -v grep | grep '/usr/bin/fetchmail'"
   assert_success
-}
-
-@test "checking restart of process: clamav (clamav disabled by ENABLED_CLAMAV=0)" {
-  run docker exec mail_disabled_clamav_spamassassin /bin/bash -c "pkill -f clamd && sleep 10 && ps aux --forest | grep -v grep | grep '/usr/sbin/clamd'"
-  assert_failure
 }
 
 @test "checking restart of process: saslauthd (saslauthd server enabled)" {

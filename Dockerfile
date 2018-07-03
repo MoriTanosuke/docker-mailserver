@@ -18,74 +18,77 @@ RUN apt-get update -q --fix-missing && \
   apt-get -y upgrade && \
   apt-get -y install postfix && \
   apt-get -y install --no-install-recommends \
-    amavisd-new \
-    arj \
-    binutils \
-    bzip2 \
-    ca-certificates \
-    cabextract \
-    clamav \
-    clamav-daemon \
-    cpio \
-    curl \
-    ed \
-    fail2ban \
-    fetchmail \
-    file \
-    gamin \
-    gzip \
-    gnupg \
-    iproute2 \
-    iptables \
-    locales \
-    liblz4-tool \
-    libmail-spf-perl \
-    libnet-dns-perl \
-    libsasl2-modules \
-    lrzip \
-    lzop \
-    netcat-openbsd \
-    nomarch \
-    opendkim \
-    opendkim-tools \
-    opendmarc \
-    pax \
-    pflogsumm \
-    p7zip-full \
-    postfix-ldap \
-    postfix-pcre \
-    postfix-policyd-spf-python \
-    postsrsd \
-    pyzor \
-    razor \
-    ripole \
-    rpm2cpio \
-    rsyslog \
-    sasl2-bin \
-    spamassassin \
-    supervisor \
-    postgrey \
-    unrar-free \
-    unzip \
-    xz-utils \
-    zoo \
-    && \
+  amavisd-new \
+  arj \
+  binutils \
+  bzip2 \
+  ca-certificates \
+  cabextract \
+  clamav \
+  clamav-daemon \
+  cpio \
+  curl \
+  ed \
+  fail2ban \
+  fetchmail \
+  file \
+  gamin \
+  gzip \
+  gnupg \
+  iproute2 \
+  iptables \
+  locales \
+  liblz4-tool \
+  libmail-spf-perl \
+  libnet-dns-perl \
+  libsasl2-modules \
+  lrzip \
+  lzop \
+  netcat-openbsd \
+  nomarch \
+  opendkim \
+  opendkim-tools \
+  opendmarc \
+  pax \
+  pflogsumm \
+  p7zip-full \
+  postfix-ldap \
+  postfix-pcre \
+  postfix-policyd-spf-python \
+  postsrsd \
+  ripole \
+  rpm2cpio \
+  rsyslog \
+  sasl2-bin \
+  supervisor \
+  postgrey \
+  unrar-free \
+  unzip \
+  xz-utils \
+  zoo \
+  && \
+  curl https://rspamd.com/apt-stable/gpg.key | apt-key add - && \
+  echo "deb [arch=amd64] http://rspamd.com/apt-stable/ stretch main" > /etc/apt/sources.list.d/rspamd.list && \
+  echo "deb-src [arch=amd64] http://rspamd.com/apt-stable/ stretch main" >> /etc/apt/sources.list.d/rspamd.list && \
+  apt-get update -q --fix-missing && \
+  apt-get  --no-install-recommends -y install rspamd \
+  && \
   curl https://packages.elasticsearch.org/GPG-KEY-elasticsearch | apt-key add - && \
   echo "deb http://packages.elastic.co/beats/apt stable main" | tee -a /etc/apt/sources.list.d/beats.list && \
   echo "deb http://ftp.debian.org/debian stretch-backports main" | tee -a /etc/apt/sources.list.d/stretch-bp.list && \
   apt-get update -q --fix-missing && \
   apt-get -y upgrade \
-    filebeat \
-    && \
+  filebeat \
+  && \
   apt-get -t stretch-backports -y install --no-install-recommends \
-    dovecot-core \
-    dovecot-imapd \
-    dovecot-ldap \
-    dovecot-lmtpd \
-    dovecot-managesieved \
-    dovecot-pop3d \
-    dovecot-sieve \
-    && \
+  dovecot-core \
+  dovecot-imapd \
+  dovecot-ldap \
+  dovecot-lmtpd \
+  dovecot-managesieved \
+  dovecot-pop3d \
+  dovecot-sieve \
+  && \
   apt-get autoclean && \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /usr/share/locale/* && \
@@ -124,10 +127,6 @@ RUN sed -i -e 's/include_try \/usr\/share\/dovecot\/protocols\.d/include_try \/e
 COPY target/dovecot/dovecot-ldap.conf.ext /etc/dovecot
 COPY target/postfix/ldap-users.cf target/postfix/ldap-groups.cf target/postfix/ldap-aliases.cf target/postfix/ldap-domains.cf /etc/postfix/
 
-# Enables Spamassassin CRON updates and update hook for supervisor
-RUN sed -i -r 's/^(CRON)=0/\1=1/g' /etc/default/spamassassin && \
-    sed -i -r 's/^\$INIT restart/supervisorctl restart amavis/g' /etc/spamassassin/sa-update-hooks.d/amavisd-new
-
 # Enables Postgrey
 COPY target/postgrey/postgrey /etc/default/postgrey
 COPY target/postgrey/postgrey.init /etc/init.d/postgrey
@@ -153,12 +152,6 @@ COPY target/fail2ban/jail.conf /etc/fail2ban/jail.conf
 COPY target/fail2ban/filter.d/dovecot.conf /etc/fail2ban/filter.d/dovecot.conf
 RUN echo "ignoreregex =" >> /etc/fail2ban/filter.d/postfix-sasl.conf && mkdir /var/run/fail2ban
 
-# Enables Pyzor and Razor
-USER amavis
-RUN razor-admin -create && \
-  razor-admin -register
-USER root
-
 # Configure DKIM (opendkim)
 # DKIM config files
 COPY target/opendkim/opendkim.conf /etc/opendkim.conf
@@ -173,6 +166,9 @@ COPY target/opendmarc/ignore.hosts /etc/opendmarc/ignore.hosts
 COPY target/fetchmail/fetchmailrc /etc/fetchmailrc_general
 RUN sed -i 's/START_DAEMON=no/START_DAEMON=yes/g' /etc/default/fetchmail
 RUN mkdir /var/run/fetchmail && chown fetchmail /var/run/fetchmail
+
+# TODO Configure rspamd
+COPY target/rspamd /etc/rspamd
 
 # Configures Postfix
 COPY target/postfix/main.cf target/postfix/master.cf /etc/postfix/

@@ -33,7 +33,6 @@ run:
 		-v "`pwd`/test/onedir":/var/mail-state \
 		-e ENABLE_CLAMAV=1 \
 		-e SPOOF_PROTECTION=1 \
-		-e ENABLE_SPAMASSASSIN=1 \
 		-e REPORT_RECIPIENT=user1@localhost.localdomain \
 		-e REPORT_SENDER=report1@mail.my-domain.com \
 		-e SA_TAG=-5.0 \
@@ -53,7 +52,6 @@ run:
 		-v "`pwd`/test/config":/tmp/docker-mailserver \
 		-v "`pwd`/test":/tmp/docker-mailserver-test \
 		-e ENABLE_CLAMAV=1 \
-		-e ENABLE_SPAMASSASSIN=1 \
 		-e SA_TAG=-5.0 \
 		-e SA_TAG2=2.0 \
 		-e SA_KILL=3.0 \
@@ -138,14 +136,6 @@ run:
 		-e DMS_DEBUG=0 \
 		-h mail.my-domain.com -t $(NAME)
 	sleep 15
-	docker run -d --name mail_disabled_clamav_spamassassin \
-		-v "`pwd`/test/config":/tmp/docker-mailserver \
-		-v "`pwd`/test":/tmp/docker-mailserver-test \
-		-e ENABLE_CLAMAV=0 \
-		-e ENABLE_SPAMASSASSIN=0 \
-		-e DMS_DEBUG=0 \
-		-h mail.my-domain.com -t $(NAME)
-	sleep 15
 	docker run -d --name mail_manual_ssl \
 		-v "`pwd`/test/config":/tmp/docker-mailserver \
 		-v "`pwd`/test":/tmp/docker-mailserver-test \
@@ -223,13 +213,6 @@ run:
 		-e POSTGREY_TEXT="Delayed by postgrey" \
 		-e DMS_DEBUG=0 \
 		-h mail.my-domain.com -t $(NAME)
-	sleep 20
-	docker run -d --name mail_undef_spam_subject \
-		-v "`pwd`/test/config":/tmp/docker-mailserver \
-		-v "`pwd`/test":/tmp/docker-mailserver-test \
-		-e ENABLE_SPAMASSASSIN=1 \
-		-e SA_SPAM_SUBJECT="undef" \
-		-h mail.my-domain.com -t $(NAME)
 	sleep 15
 	docker run -d --name mail_with_relays \
 		-v "`pwd`/test/config/relay-hosts":/tmp/docker-mailserver \
@@ -272,7 +255,6 @@ fixtures:
 	docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/sieve-spam-folder.txt"
 	docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/sieve-pipe.txt"
 	docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/non-existing-user.txt"
-	docker exec mail_disabled_clamav_spamassassin /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/existing-user1.txt"
 	docker exec mail /bin/sh -c "sendmail root < /tmp/docker-mailserver-test/email-templates/root-email.txt"
 	# postfix virtual transport lmtp
 	docker exec mail_lmtp_ip /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/existing-user1.txt"
@@ -296,7 +278,6 @@ clean:
 		mail_fail2ban \
 		mail_fetchmail \
 		fail-auth-mailer \
-		mail_disabled_clamav_spamassassin \
 		mail_manual_ssl \
 		ldap_for_mail \
 		mail_with_ldap \

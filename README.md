@@ -13,7 +13,7 @@ Includes:
 - dovecot for sasl, imap (and optional pop3) with ssl support, with ldap auth
 - saslauthd with ldap auth
 - [amavis](https://www.amavis.org/)
-- [spamassasin](http://spamassassin.apache.org/) supporting custom rules
+- [rspamd](https://rspamd.com)
 - [clamav](https://www.clamav.net/) with automatic updates
 - opendkim
 - opendmarc
@@ -125,7 +125,6 @@ services:
     - mailstate:/var/mail-state
     - ./config/:/tmp/docker-mailserver/
     environment:
-    - ENABLE_SPAMASSASSIN=1
     - ENABLE_CLAMAV=1
     - ENABLE_FAIL2BAN=1
     - ENABLE_POSTGREY=1
@@ -163,7 +162,6 @@ services:
       - mailstate:/var/mail-state
       - ./config/:/tmp/docker-mailserver/
     environment:
-      - ENABLE_SPAMASSASSIN=1
       - ENABLE_CLAMAV=1
       - ENABLE_FAIL2BAN=1
       - ENABLE_POSTGREY=1
@@ -344,37 +342,6 @@ Enabled by ENABLE_POSTFIX_VIRTUAL_TRANSPORT. Specify the final delivery of postf
   - monthly => Send a report every month
 
 Note: This Variable actually controls logrotate inside the container and rotates the log depending on this setting. The main log output is still available in its entirety via `docker logs mail` (Or your respective container name). If you want to control logrotation for the docker generated logfile see: [Docker Logging Drivers](https://docs.docker.com/config/containers/logging/configure/)
-
-## Spamassassin
-
-##### ENABLE_SPAMASSASSIN
-
-  - **0** => Spamassassin is disabled
-  - 1 => Spamassassin is enabled
-
-##### SA_TAG
-
-  - **2.0** => add spam info headers if at, or above that level
-
-Note: this spamassassin setting needs `ENABLE_SPAMASSASSIN=1`
-
-##### SA_TAG2
-
-  - **6.31** => add 'spam detected' headers at that level
-
-Note: this spamassassin setting needs `ENABLE_SPAMASSASSIN=1`
-
-##### SA_KILL
-
-  - **6.31** => triggers spam evasive actions
-
-Note: this spamassassin setting needs `ENABLE_SPAMASSASSIN=1`
-
-##### SA_SPAM_SUBJECT
-
-  - **\*\*\*SPAM\*\*\*** => add tag to subject if spam detected
-
-Note: this spamassassin setting needs `ENABLE_SPAMASSASSIN=1`
 
 ## Fetchmail
 

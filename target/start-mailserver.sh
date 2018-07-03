@@ -8,7 +8,6 @@
 ##########################################################################
 declare -A DEFAULT_VARS
 DEFAULT_VARS["ENABLE_CLAMAV"]="${ENABLE_CLAMAV:="0"}"
-DEFAULT_VARS["ENABLE_SPAMASSASSIN"]="${ENABLE_SPAMASSASSIN:="0"}"
 DEFAULT_VARS["ENABLE_POP3"]="${ENABLE_POP3:="0"}"
 DEFAULT_VARS["ENABLE_FAIL2BAN"]="${ENABLE_FAIL2BAN:="0"}"
 DEFAULT_VARS["ENABLE_MANAGESIEVE"]="${ENABLE_MANAGESIEVE:="0"}"
@@ -1153,26 +1152,8 @@ function _setup_security_stack() {
 
 	# recreate auto-generated file
 	dms_amavis_file="/etc/amavis/conf.d/61-dms_auto_generated"
-  echo "# WARNING: this file is auto-generated." > $dms_amavis_file
+	echo "# WARNING: this file is auto-generated." > $dms_amavis_file
 	echo "use strict;" >> $dms_amavis_file
-
-	# Spamassassin
-	if [ "$ENABLE_SPAMASSASSIN" = 0 ]; then
-		notify 'warn' "Spamassassin is disabled. You can enable it with 'ENABLE_SPAMASSASSIN=1'"
-		echo "@bypass_spam_checks_maps = (1);" >> $dms_amavis_file
-	elif [ "$ENABLE_SPAMASSASSIN" = 1 ]; then
-		notify 'inf' "Enabling and configuring spamassassin"
-		SA_TAG=${SA_TAG:="2.0"} && sed -i -r 's/^\$sa_tag_level_deflt (.*);/\$sa_tag_level_deflt = '$SA_TAG';/g' /etc/amavis/conf.d/20-debian_defaults
-		SA_TAG2=${SA_TAG2:="6.31"} && sed -i -r 's/^\$sa_tag2_level_deflt (.*);/\$sa_tag2_level_deflt = '$SA_TAG2';/g' /etc/amavis/conf.d/20-debian_defaults
-		SA_KILL=${SA_KILL:="6.31"} && sed -i -r 's/^\$sa_kill_level_deflt (.*);/\$sa_kill_level_deflt = '$SA_KILL';/g' /etc/amavis/conf.d/20-debian_defaults
-		SA_SPAM_SUBJECT=${SA_SPAM_SUBJECT:="***SPAM*** "}
-		if [ "$SA_SPAM_SUBJECT" == "undef" ]; then
-			sed -i -r 's/^\$sa_spam_subject_tag (.*);/\$sa_spam_subject_tag = undef;/g' /etc/amavis/conf.d/20-debian_defaults
-		else
-			sed -i -r 's/^\$sa_spam_subject_tag (.*);/\$sa_spam_subject_tag = '"'$SA_SPAM_SUBJECT'"';/g' /etc/amavis/conf.d/20-debian_defaults
-		fi
-		test -e /tmp/docker-mailserver/spamassassin-rules.cf && cp /tmp/docker-mailserver/spamassassin-rules.cf /etc/spamassassin/
-	fi
 
 	# Clamav
 	if [ "$ENABLE_CLAMAV" = 0 ]; then
@@ -1194,9 +1175,6 @@ function _setup_security_stack() {
 		# Disable logrotate config for fail2ban if not enabled
 		rm -f /etc/logrotate.d/fail2ban
 	fi
-
-	# Fix cron.daily for spamassassin
-	sed -i -e 's~invoke-rc.d spamassassin reload~/etc/init\.d/spamassassin reload~g' /etc/cron.daily/spamassassin
 
 	# Copy user provided configuration files if provided
 	if [ -f /tmp/docker-mailserver/amavis.cf ]; then
@@ -1343,7 +1321,7 @@ function _misc_save_states() {
 	statedir=/var/mail-state
 	if [ "$ONE_DIR" = 1 -a -d $statedir ]; then
 		notify 'inf' "Consolidating all state onto $statedir"
-		for d in /var/spool/postfix /var/lib/postfix /var/lib/amavis /var/lib/clamav /var/lib/spamassassin /var/lib/fail2ban /var/lib/postgrey /var/lib/dovecot; do
+		for d in /var/spool/postfix /var/lib/postfix /var/lib/amavis /var/lib/clamav /var/lib/fail2ban /var/lib/postgrey /var/lib/dovecot; do
 			dest=$statedir/`echo $d | sed -e 's/.var.//; s/\//-/g'`
 			if [ -d $dest ]; then
 				notify 'inf' "  Destination $dest exists, linking $d to it"
@@ -1364,7 +1342,6 @@ function _misc_save_states() {
 		chown -R clamav /var/mail-state/lib-clamav
 		chown -R postfix /var/mail-state/lib-postfix
 		chown -R postgrey /var/mail-state/lib-postgrey
-		chown -R debian-spamd /var/mail-state/lib-spamassassin
 		chown -R postfix /var/mail-state/spool-postfix
 
 	fi
